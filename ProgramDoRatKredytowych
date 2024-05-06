@@ -1,0 +1,79 @@
+import math
+
+def oblicz_rate_annuitetowa(pozostala_kwota, oprocentowanie_roczne, liczba_miesiecy):
+    miesieczne_oprocentowanie = oprocentowanie_roczne / 100 / 12
+    if miesieczne_oprocentowanie == 0:
+        return round(pozostala_kwota / liczba_miesiecy, 2)
+    mnoznik = (miesieczne_oprocentowanie * (1 + miesieczne_oprocentowanie)**liczba_miesiecy) / ((1 + miesieczne_oprocentowanie)**liczba_miesiecy - 1)
+    return round(pozostala_kwota * mnoznik, 2)
+
+def oblicz_odsetki(pozostaly_kapital, oprocentowanie_roczne):
+    return round((oprocentowanie_roczne / 100 / 12) * pozostaly_kapital, 2)
+
+def harmonogram_splat(kwota_kredytu, oprocentowanie_roczne, liczba_miesiecy, typ_rat, okres_karencji=0):
+    pozostaly_kapital = kwota_kredytu
+    harmonogram = [(0, 0, 0, 0, round(kwota_kredytu, 2))]  # Rata 0 z pełnym zadłużeniem
+
+    if typ_rat == 'karencja':
+        rata_annuitetowa = oblicz_rate_annuitetowa(pozostaly_kapital, oprocentowanie_roczne, liczba_miesiecy - okres_karencji)
+
+    for miesiac in range(1, liczba_miesiecy + 1):
+        odsetki = oblicz_odsetki(pozostaly_kapital, oprocentowanie_roczne)
+        if typ_rat == 'kapitalowa':
+            rata_kapitalowa = round(kwota_kredytu / liczba_miesiecy, 2)
+            calkowita_rata = round(rata_kapitalowa + odsetki, 2)
+        elif typ_rat == 'annuitetowa':
+            rata_annuitetowa = oblicz_rate_annuitetowa(kwota_kredytu, oprocentowanie_roczne, liczba_miesiecy)
+            rata_kapitalowa = rata_annuitetowa - odsetki
+            calkowita_rata = rata_annuitetowa
+        elif typ_rat == 'karencja':
+            if miesiac <= okres_karencji:
+                rata_kapitalowa = 0
+                calkowita_rata = odsetki
+            else:
+                rata_kapitalowa = rata_annuitetowa - odsetki
+                calkowita_rata = rata_annuitetowa
+
+        pozostaly_kapital -= rata_kapitalowa
+
+        if miesiac == liczba_miesiecy:
+            pozostaly_kapital = 0
+
+        harmonogram.append((miesiac, rata_kapitalowa, odsetki, calkowita_rata, round(pozostaly_kapital, 2)))
+
+    return harmonogram
+
+def main():
+    kontynuowac = 'T'
+    while kontynuowac.upper() == 'T':
+        print("Wybierz typ rat:")
+        print("1 - Rata kapitałowa (malejąca)")
+        print("2 - Rata annuitetowa (równa)")
+        print("3 - Rata z okresem karencji")
+        wybor = int(input("Wybierz opcję (1, 2, 3): "))
+
+        kwota_kredytu = float(input("Podaj kwotę kredytu: "))
+        oprocentowanie_roczne = float(input("Podaj oprocentowanie roczne (np. 5 dla 5%): "))
+        liczba_miesiecy = int(input("Podaj liczbę miesięcy do spłaty: "))
+        okres_karencji = 0  # Domyślna wartość
+
+        if wybor == 1:
+            typ_rat = 'kapitalowa'
+        elif wybor == 2:
+            typ_rat = 'annuitetowa'
+        elif wybor == 3:
+            typ_rat = 'karencja'
+            okres_karencji = int(input("Podaj liczbę miesięcy karencji: "))
+        else:
+            print("Nieprawidłowy wybór. Uruchom program ponownie.")
+            return
+
+        harmonogram = harmonogram_splat(kwota_kredytu, oprocentowanie_roczne, liczba_miesiecy, typ_rat, okres_karencji)
+
+        print("Miesiąc | Rata kapitałowa | Odsetki | Całkowita rata | Pozostałe zadłużenie")
+        for miesiac, rata_kapitalowa, odsetki, calkowita_rata, pozostaly_kapital in harmonogram:
+            print(f"{miesiac:6} | {rata_kapitalowa:15} | {odsetki:8} | {calkowita_rata:13} | {pozostaly_kapital:20}")
+        kontynuowac = input("Czy chcesz kontynować? (T/N)")
+
+if __name__ == "__main__":
+    main()
